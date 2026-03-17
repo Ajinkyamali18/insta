@@ -2,11 +2,8 @@ import re
 from flask import Flask, render_template, request, jsonify
 import instaloader
 
-# Templates folder path (VERY IMPORTANT)
-app = Flask(
-    __name__,
-    template_folder=os.path.join(BASE_DIR, "templates")
-)
+# ✅ Flask app (templates MUST be inside api/templates)
+app = Flask(__name__, template_folder="templates")
 
 
 # 🔍 Shortcode extract function
@@ -58,9 +55,7 @@ def get_images():
         return jsonify({"success": False, "error": str(e)})
 
 
-# 🧪 Debug route (optional but useful)
+# 🧪 Debug route
 @app.route("/test")
 def test():
     return "✅ API Working!"
-
-
