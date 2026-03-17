@@ -1,55 +1,50 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import instaloader
-import re
 
-# Ensure flask can find templates from the repo-level templates directory
-app = Flask(__name__, template_folder='../templates')
+# Vercel sathi template folder chi path fixed karne
+# He line khup mahatvachi ahe
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+app = Flask(__name__, template_folder=template_dir)
 
-def _extract_shortcode(post_url):
-    if not post_url or not isinstance(post_url, str):
-        return None
-    post_url = post_url.strip()
-    # Instagram URL formats: /p/SHORTCODE/, /reel/SHORTCODE/, /tv/SHORTCODE/ or just SHORTCODE
-    match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_\-]+)/?", post_url)
-    if match:
-        return match.group(1)
-    if post_url.endswith('/'):
-        post_url = post_url[:-1]
-    parts = post_url.split('/')
-    if parts:
-        return parts[-1]
-    return None
+L = instaloader.Instaloader()
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        return f"Error: Template sapdat nahiye. Path: {template_dir} | Exception: {str(e)}"
 
 @app.route('/api/get_images', methods=['POST'])
 def get_images():
     try:
-        data = request.get_json(silent=True) or {}
-        post_url = (data.get('url') or '').strip()
+        data = request.json
+        post_url = data.get('url', '')
         if not post_url:
-            return jsonify({'success': False, 'error': 'Link takali nahi!'}), 400
+            return jsonify({'success': False, 'error': 'Link rikami ahe!'})
 
-        shortcode = _extract_shortcode(post_url)
-        if not shortcode:
-            return jsonify({'success': False, 'error': 'Shortcode extract doch yeta nahii'}), 400
-
-        loader = instaloader.Instaloader(dirname_pattern='/tmp/instaloader', download_pictures=False, save_metadata=False, compress_json=False)
-        post = instaloader.Post.from_shortcode(loader.context, shortcode)
-
+        # URL madhun shortcode kadhne
+        temp_url = post_url.strip('/')
+        shortcode = temp_url.split('/')[-1]
+        
+        # Instagram post fetch karne
+        post = instaloader.Post.from_shortcode(L.context, shortcode)
+        
         images = []
-        if getattr(post, 'typename', '') == 'GraphSidecar':  # Multiple Photos (Carousel)
+        if post.typename == 'GraphSidecar':
             for node in post.get_sidecar_nodes():
                 images.append(node.display_url)
-        else:  # Single Photo/Reel
+        else:
             images.append(post.display_url)
-
+            
         return jsonify({'success': True, 'images': images})
-
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)})
 
-# For Vercel Python, exporting `app` as WSGI is sufficient. Keep compatibility alias (does not do direct app(event, context)).
-handler = app
+# He line Vercel chya function invocation sathi garjechi ahe
+def handler(event, context):
+    return app(event, context)
+
+if __name__ == "__main__":
+    app.run()
