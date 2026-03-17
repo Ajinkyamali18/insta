@@ -3,37 +3,55 @@ import re
 from flask import Flask, render_template, request, jsonify
 import instaloader
 
-# Vercel sathi template folder path fixed karne
-# He logic templates folder sho dhnyasathi sarvat robust aahe
-current_dir = os.path.dirname(os.path.abspath(__file__))
-template_path = os.path.join(current_dir, '..', 'templates')
-
-app = Flask(__name__, template_folder=template_path)
+# Vercel sathi simple path logic
+# 'api' folder chya baher asleli index.html vaparnyasathi
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, template_folder=base_dir)
 
 def _extract_shortcode(post_url):
-    if not post_url: return None
+    if not post_url or not isinstance(post_url, str):
+        return None
+    post_url = post_url.strip()
+    # Regex vaprun shortcode kadhne (p/reel/tv)
     match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_\-]+)/?", post_url)
-    if match: return match.group(1)
-    return post_url.strip('/').split('/')[-1].split('?')[0]
+    if match:
+        return match.group(1)
+    
+    # Jar regex fail jale tar split logic
+    temp_url = post_url.strip('/')
+    parts = temp_url.split('/')
+    if parts:
+        return parts[-1].split('?')[0]
+    return None
 
 @app.route('/')
 def home():
-    # Jar error ala tar blank page yenyapekshya error message disel
     try:
+        # He ata baherchya folder madhli index.html load karel
         return render_template('index.html')
     except Exception as e:
-        return f"Template Error: index.html sapdali nahi. Path check kara: {template_path}"
+        return f"Error: index.html sapdali nahi. Path: {base_dir} | {str(e)}"
 
 @app.route('/api/get_images', methods=['POST'])
 def get_images():
     try:
         data = request.get_json(silent=True) or {}
-        post_url = data.get('url', '').strip()
+        post_url = (data.get('url') or '').strip()
+        
         if not post_url:
             return jsonify({'success': False, 'error': 'Link taka!'}), 400
 
         shortcode = _extract_shortcode(post_url)
-        loader = instaloader.Instaloader()
+        if not shortcode:
+            return jsonify({'success': False, 'error': 'Shortcode milala nahi.'}), 400
+
+        # Instaloader setup
+        loader = instaloader.Instaloader(
+            download_pictures=False, 
+            save_metadata=False, 
+            compress_json=False
+        )
+        
         post = instaloader.Post.from_shortcode(loader.context, shortcode)
 
         images = []
@@ -44,5 +62,9 @@ def get_images():
             images.append(post.display_url)
 
         return jsonify({'success': True, 'images': images})
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Vercel expects 'app' or 'handler'
+handler = app
