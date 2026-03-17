@@ -56,8 +56,4 @@ def get_images():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# Vercel Python expects a WSGI app object, and this alias is safe.
-handler = app
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
