@@ -2,21 +2,16 @@ import os
 from flask import Flask, render_template, request, jsonify
 import instaloader
 
-# Vercel sathi path set karnyacha sarvat safe marg
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-template_dir = os.path.join(base_dir, 'templates')
+# Vercel sathi template folder shodhne
+current_dir = os.path.dirname(os.path.abspath(__file__))
+template_path = os.path.join(current_dir, '..', 'templates')
 
-app = Flask(__name__, template_folder=template_dir)
-
+app = Flask(__name__, template_folder=template_path)
 L = instaloader.Instaloader()
 
 @app.route('/')
 def home():
-    # Jar file sapdali nahi tar error screen var disel (White screen yenyapekshya)
-    try:
-        return render_template('index.html')
-    except Exception as e:
-        return f"Templates folder sapdat nahiye. Path: {template_dir}. Error: {str(e)}"
+    return render_template('index.html')
 
 @app.route('/api/get_images', methods=['POST'])
 def get_images():
@@ -26,8 +21,8 @@ def get_images():
         if not post_url:
             return jsonify({'success': False, 'error': 'Link taka!'})
 
-        temp_url = post_url.strip('/')
-        shortcode = temp_url.split('/')[-1]
+        # URL madhun shortcode kadhne
+        shortcode = post_url.strip('/').split('/')[-1].split('?')[0]
         
         post = instaloader.Post.from_shortcode(L.context, shortcode)
         
@@ -41,3 +36,5 @@ def get_images():
         return jsonify({'success': True, 'images': images})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# Vercel sathi handler chi garaj naste pan app export karne garjeche aahe
