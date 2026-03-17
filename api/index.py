@@ -3,14 +3,9 @@ import re
 from flask import Flask, render_template, request, jsonify
 import instaloader
 
-# Vercel sathi path logic - Sarvat robust marg
-# He logic sho dhel ki index.html kuthe aahe
-current_file_path = os.path.abspath(__file__)
-api_dir = os.path.dirname(current_file_path)
-root_dir = os.path.dirname(api_dir)
-
-# Flask la sangne ki templates root folder madhe aahet
-app = Flask(__name__, template_folder=root_dir)
+# Vercel sathi Path Logic
+# 'api' folder chya ek level baher root madhe index.html aahe
+app = Flask(__name__, template_folder='..')
 
 def _extract_shortcode(post_url):
     if not post_url: return None
@@ -20,11 +15,11 @@ def _extract_shortcode(post_url):
 
 @app.route('/')
 def home():
-    # Debugging sathi: jar file sapdali nahi tar error message disel
     try:
+        # He root madhli index.html load karel
         return render_template('index.html')
     except Exception as e:
-        return f"Error: index.html sapdali nahi. Root Path: {root_dir}. Error: {str(e)}"
+        return f"Error: index.html sapdali nahi. Error: {str(e)}"
 
 @app.route('/api/get_images', methods=['POST'])
 def get_images():
@@ -48,3 +43,6 @@ def get_images():
         return jsonify({'success': True, 'images': images})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# Vercel sathi alias
+handler = app
