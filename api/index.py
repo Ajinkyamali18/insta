@@ -2,15 +2,21 @@ import os
 from flask import Flask, render_template, request, jsonify
 import instaloader
 
-# Path set karne
-template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+# Vercel sathi path set karnyacha sarvat safe marg
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+template_dir = os.path.join(base_dir, 'templates')
+
 app = Flask(__name__, template_folder=template_dir)
 
 L = instaloader.Instaloader()
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Jar file sapdali nahi tar error screen var disel (White screen yenyapekshya)
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        return f"Templates folder sapdat nahiye. Path: {template_dir}. Error: {str(e)}"
 
 @app.route('/api/get_images', methods=['POST'])
 def get_images():
@@ -35,6 +41,3 @@ def get_images():
         return jsonify({'success': True, 'images': images})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
-
-# Vercel sathi he khup mahatvache aahe
-# Handler kadhun taka, fakt app export kara
