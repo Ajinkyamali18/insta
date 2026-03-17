@@ -1,19 +1,10 @@
-import re
-from flask import Flask, render_template, request, jsonify
+from flask import Flask
 
-app = Flask(__name__, template_folder="templates")
-
+app = Flask(__name__)
 
 @app.route("/")
 def home():
-    try:
-        return render_template("index.html")
-    except Exception as e:
-        return f"""
-        <h1>ERROR</h1>
-        <pre>{str(e)}</pre>
-        """
-
+    return "<h1>WORKING PERFECT</h1>"
 
 @app.route("/test")
 def test():
