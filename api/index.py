@@ -3,7 +3,10 @@ from flask import Flask, render_template, request, jsonify
 import instaloader
 
 # Templates folder path (VERY IMPORTANT)
-app = Flask(__name__, template_folder="../templates")
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates")
+)
 
 
 # 🔍 Shortcode extract function
