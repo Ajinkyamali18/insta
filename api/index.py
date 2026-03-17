@@ -61,6 +61,3 @@ def test():
     return "✅ API Working!"
 
 
-# 🔥 Vercel handler (IMPORTANT)
-def handler(request, response):
-    return app(request.environ, response.start_response)
