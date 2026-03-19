@@ -64,6 +64,34 @@ def download():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+        @app.route("/get-posts", methods=["POST"])
+def get_posts():
+    data = request.json
+    username = data.get("username")
+
+    try:
+        profile = instaloader.Profile.from_username(L.context, username)
+
+        posts_data = []
+        count = 0
+
+        for post in profile.get_posts():
+            posts_data.append({
+                "shortcode": post.shortcode,
+                "url": f"https://www.instagram.com/p/{post.shortcode}/",
+                "thumbnail": post.url,
+                "user": username
+            })
+
+            count += 1
+            if count >= 10:  # limit
+                break
+
+        return jsonify({"status": "success", "posts": posts_data})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 
 # 🔹 PORT FIX (Render deploy)
 if __name__ == "__main__":

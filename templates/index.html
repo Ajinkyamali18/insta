@@ -2,16 +2,26 @@
 <html>
 <head>
   <title>Insta Down</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="apple-touch-icon" href="/icon.png">
 
   <style>
     body {
       margin: 0;
-      font-family: Arial;
+      font-family: -apple-system, BlinkMacSystemFont;
       background: #fafafa;
+      -webkit-overflow-scrolling: touch;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
       background: white;
       padding: 15px;
       text-align: center;
@@ -19,7 +29,26 @@
       border-bottom: 1px solid #ddd;
     }
 
-    /* 🔴 STORIES */
+    .search-box {
+      margin-top: 10px;
+    }
+
+    .search-box input {
+      padding: 8px;
+      width: 65%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .search-box button {
+      padding: 8px 12px;
+      border: none;
+      background: #0095f6;
+      color: white;
+      border-radius: 6px;
+    }
+
+    /* STORIES */
     .stories {
       display: flex;
       overflow-x: auto;
@@ -29,70 +58,93 @@
     }
 
     .story {
-      width: 60px;
-      height: 60px;
+      width: 65px;
+      height: 65px;
       border-radius: 50%;
       border: 3px solid #ff004f;
       margin-right: 10px;
+      flex-shrink: 0;
     }
 
-    /* 📸 POSTS */
+    /* FEED */
     .feed {
-      max-width: 400px;
+      max-width: 420px;
       margin: auto;
     }
 
     .post {
       background: white;
-      margin: 15px 0;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 10px;
+      margin: 15px 10px;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     .username {
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
     }
 
     .btn {
       margin-top: 10px;
-      padding: 10px;
+      padding: 14px;
       background: #0095f6;
       color: white;
       border: none;
       width: 100%;
-      border-radius: 5px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    #loading {
+      text-align: center;
+      display: none;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-<div class="header">INSTA DOWN</div>
+<!-- ✅ SINGLE HEADER -->
+<div class="header">
+  INSTA DOWN
 
-<!-- 🔴 Stories UI -->
+  <div class="search-box">
+    <input id="profile" placeholder="Enter username">
+    <button onclick="loadRealPosts()">Load</button>
+  </div>
+</div>
+
 <div class="stories" id="stories"></div>
 
-<!-- 📸 Feed -->
+<p id="loading">Loading...</p>
+
 <div class="feed" id="feed"></div>
 
 <script>
-// 🔴 Dummy Stories
+// STORIES
 for (let i = 0; i < 10; i++) {
   let story = document.createElement("div");
   story.className = "story";
   document.getElementById("stories").appendChild(story);
 }
 
-// 📸 Sample Posts (तू backend मधून replace करू शकतोस)
+// DUMMY POSTS
 let posts = [
-  {user:"user1", url:"https://www.instagram.com/p/ABC123/"},
-  {user:"user2", url:"https://www.instagram.com/p/XYZ456/"}
+  {user:"demo", url:"https://www.instagram.com/p/demo1/"},
+  {user:"demo", url:"https://www.instagram.com/p/demo2/"}
 ];
 
-// Load Posts
+let loading = false;
+let isRealMode = false;
+
+// LOAD DUMMY POSTS
 function loadPosts() {
+  if (loading || isRealMode) return;
+
+  loading = true;
+
   const feed = document.getElementById("feed");
 
   posts.forEach(p => {
@@ -107,20 +159,13 @@ function loadPosts() {
 
     feed.appendChild(post);
   });
+
+  loading = false;
 }
 
 loadPosts();
 
-// 🔥 Copy link = auto download
-document.addEventListener("paste", function (e) {
-  const text = (e.clipboardData || window.clipboardData).getData("text");
-
-  if (text.includes("instagram.com")) {
-    downloadPost(text);
-  }
-});
-
-// 🔽 Download API
+// DOWNLOAD
 function downloadPost(url) {
   fetch("/download", {
     method: "POST",
@@ -129,13 +174,72 @@ function downloadPost(url) {
   })
   .then(res => res.json())
   .then(data => {
-    alert("Status: " + data.status);
+    alert("Downloaded ✅");
   });
 }
 
-// 🔄 Infinite scroll
+// REAL POSTS LOAD
+async function loadRealPosts() {
+  const username = document.getElementById("profile").value;
+
+  if (!username) {
+    alert("Enter username");
+    return;
+  }
+
+  isRealMode = true;
+
+  document.getElementById("loading").style.display = "block";
+
+  const res = await fetch("/get-posts", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username: username })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("loading").style.display = "none";
+
+  if (data.status !== "success") {
+    alert("Error: " + data.message);
+    return;
+  }
+
+  const feed = document.getElementById("feed");
+  feed.innerHTML = "";
+
+  data.posts.forEach(p => {
+    const post = document.createElement("div");
+    post.className = "post";
+
+    post.innerHTML = `
+      <div class="username">${p.user}</div>
+      <img src="${p.thumbnail}" style="width:100%; border-radius:10px;">
+      <button class="btn" onclick="downloadPost('${p.url}')">Download</button>
+    `;
+
+    feed.appendChild(post);
+  });
+}
+
+// iPhone clipboard auto detect
+let lastText = "";
+
+setInterval(async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+
+    if (text !== lastText && text.includes("instagram.com")) {
+      lastText = text;
+      downloadPost(text);
+    }
+  } catch {}
+}, 3000);
+
+// Infinite scroll
 window.addEventListener("scroll", () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
     loadPosts();
   }
 });
