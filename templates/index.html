@@ -1,80 +1,144 @@
 <!DOCTYPE html>
-<html lang="mr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Personal Insta Saver</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background-color: #fafafa; margin: 0; padding: 0; }
-        .header { background: white; padding: 15px; border-bottom: 1px solid #dbdbdb; text-align: center; font-weight: bold; }
-        .container { padding: 20px; text-align: center; }
-        input { width: 90%; padding: 12px; border: 1px solid #dbdbdb; border-radius: 8px; font-size: 16px; margin-bottom: 15px; }
-        button { background-color: #0095f6; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 14px; width: 95%; }
-        
-        /* The Selection Box (Modal) */
-        #selectionBox { display: none; position: fixed; bottom: 0; left: 0; width: 100%; height: 75%; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .grid-item { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #eee; }
-        .grid-item img { width: 100%; display: block; }
-        .dl-btn { background: rgba(255,255,255,0.9); color: #333; position: absolute; bottom: 5px; right: 5px; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; text-decoration: none; border: 1px solid #ccc; }
-        .close-bar { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 20px; }
-    </style>
+  <title>Insta Down</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #fafafa;
+    }
+
+    .header {
+      background: white;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+    }
+
+    /* 🔴 STORIES */
+    .stories {
+      display: flex;
+      overflow-x: auto;
+      padding: 10px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .story {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #ff004f;
+      margin-right: 10px;
+    }
+
+    /* 📸 POSTS */
+    .feed {
+      max-width: 400px;
+      margin: auto;
+    }
+
+    .post {
+      background: white;
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .username {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .btn {
+      margin-top: 10px;
+      padding: 10px;
+      background: #0095f6;
+      color: white;
+      border: none;
+      width: 100%;
+      border-radius: 5px;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="header">Insta Saver Tool</div>
+<div class="header">INSTA DOWN</div>
 
-<div class="container">
-    <input type="text" id="instaLink" placeholder="Paste Post Link Here...">
-    <button onclick="getImages()">Extract Photos</button>
-</div>
+<!-- 🔴 Stories UI -->
+<div class="stories" id="stories"></div>
 
-<div id="selectionBox">
-    <div class="close-bar" onclick="closeBox()"></div>
-    <h3 style="margin-top:0">Select Photos</h3>
-    <div id="imageGrid" class="grid"></div>
-</div>
+<!-- 📸 Feed -->
+<div class="feed" id="feed"></div>
 
 <script>
-    async function getImages() {
-        const url = document.getElementById('instaLink').value;
-        if(!url) return alert("Link taka!");
-        
-        const btn = document.querySelector('button');
-        btn.innerText = "Processing...";
-        
-        try {
-            const response = await fetch('/api/get_images', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url })
-            });
-            const data = await response.json();
-            
-            if(data.success) {
-                const grid = document.getElementById('imageGrid');
-                grid.innerHTML = '';
-                data.images.forEach((img, i) => {
-                    grid.innerHTML += `
-                        <div class="grid-item">
-                            <img src="${img}">
-                            <a href="${img}" target="_blank" class="dl-btn">Save Image</a>
-                        </div>
-                    `;
-                });
-                document.getElementById('selectionBox').style.display = 'block';
-            } else {
-                alert("Error: " + data.error);
-            }
-        } catch (e) {
-            alert("Something went wrong!");
-        }
-        btn.innerText = "Extract Photos";
-    }
+// 🔴 Dummy Stories
+for (let i = 0; i < 10; i++) {
+  let story = document.createElement("div");
+  story.className = "story";
+  document.getElementById("stories").appendChild(story);
+}
 
-    function closeBox() {
-        document.getElementById('selectionBox').style.display = 'none';
-    }
+// 📸 Sample Posts (तू backend मधून replace करू शकतोस)
+let posts = [
+  {user:"user1", url:"https://www.instagram.com/p/ABC123/"},
+  {user:"user2", url:"https://www.instagram.com/p/XYZ456/"}
+];
+
+// Load Posts
+function loadPosts() {
+  const feed = document.getElementById("feed");
+
+  posts.forEach(p => {
+    const post = document.createElement("div");
+    post.className = "post";
+
+    post.innerHTML = `
+      <div class="username">${p.user}</div>
+      <div>${p.url}</div>
+      <button class="btn" onclick="downloadPost('${p.url}')">Download</button>
+    `;
+
+    feed.appendChild(post);
+  });
+}
+
+loadPosts();
+
+// 🔥 Copy link = auto download
+document.addEventListener("paste", function (e) {
+  const text = (e.clipboardData || window.clipboardData).getData("text");
+
+  if (text.includes("instagram.com")) {
+    downloadPost(text);
+  }
+});
+
+// 🔽 Download API
+function downloadPost(url) {
+  fetch("/download", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ url: url })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert("Status: " + data.status);
+  });
+}
+
+// 🔄 Infinite scroll
+window.addEventListener("scroll", () => {
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+    loadPosts();
+  }
+});
 </script>
 
 </body>

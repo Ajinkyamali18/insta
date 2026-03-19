@@ -1,51 +1,70 @@
-import re
 from flask import Flask, render_template, request, jsonify
 import instaloader
+import os
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__)
 
+L = instaloader.Instaloader()
 
-def _extract_shortcode(post_url):
-    if not post_url:
-        return None
-    match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_\-]+)/?", post_url)
-    if match:
-        return match.group(1)
-    return post_url.strip('/').split('/')[-1].split('?')[0]
+USERNAME = None
 
-
+# 🔹 Home page
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-@app.route("/api/get_images", methods=["POST"])
-def get_images():
+# 🔹 LOGIN API
+@app.route("/login", methods=["POST"])
+def login():
+    global USERNAME
+    data = request.json
+
+    username = data.get("username")
+    password = data.get("password")
+
     try:
-        data = request.get_json(silent=True) or {}
-        post_url = data.get("url", "").strip()
+        L.login(username, password)
+        L.save_session_to_file("session")
 
-        if not post_url:
-            return jsonify({"success": False, "error": "Link taka!"})
+        USERNAME = username
 
-        shortcode = _extract_shortcode(post_url)
-
-        loader = instaloader.Instaloader()
-        post = instaloader.Post.from_shortcode(loader.context, shortcode)
-
-        images = []
-
-        if getattr(post, "typename", "") == "GraphSidecar":
-            for node in post.get_sidecar_nodes():
-                images.append(node.display_url)
-        else:
-            images.append(post.display_url)
-
-        return jsonify({"success": True, "images": images})
-
+        return jsonify({"status": "success"})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"status": "error", "message": str(e)})
 
 
+# 🔹 LOAD SESSION (auto login like friendly app)
+@app.route("/load-session")
+def load_session():
+    global USERNAME
+    try:
+        if USERNAME:
+            L.load_session_from_file(USERNAME, "session")
+            return {"status": "loaded"}
+    except:
+        pass
+
+    return {"status": "no session"}
+
+
+# 🔹 DOWNLOAD POST
+@app.route("/download", methods=["POST"])
+def download():
+    data = request.json
+    url = data.get("url")
+
+    try:
+        shortcode = url.split("/")[-2]
+        post = instaloader.Post.from_shortcode(L.context, shortcode)
+
+        L.download_post(post, target="downloads")
+
+        return {"status": "downloaded"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+# 🔹 PORT FIX (Render deploy)
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
